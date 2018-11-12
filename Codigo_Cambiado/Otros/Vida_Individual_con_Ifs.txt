@@ -1,0 +1,857 @@
+ Provision_Gasto_Basica <- function(ed, ant, rCob, edSA, rPrim, Plan, inic, omega_prov, omega_pri, prob_muerte_prov , prob_muerte_cony_prov , i_prov, prob_muerte_pri , i_pri, jSA, jPrim, P_pura, P_inv, P_comerc, G_act){
+
+#ed: edad de contratación
+#ant: antigüedad
+#rCob: edad límite de cobertura
+#edSA: edad límite de crecimiento del monto asegurado
+#rPrim: edad límite de pago de primas
+#Plan: número de Plan o tipo de seguro
+#inic: edad inicial de la tabla de mortalidad
+#omega_prov: edad final de la tabla de mortalidad de provisión
+#omega_pri: edad final de la tabla de mortalidad de prima
+#prob_muerte_prov: probabilidad de muerte para el cálculo de la provisión
+#prob_muerte_cony_prov: probabilidad de muerte del cónyuge para el cálculo de la provisión
+#i_prov: tasa de interés para provisión
+#prob_muerte_pri: probabilidad de muerte para el cálculo de la prima
+#i_pri: tasa de interés para prima
+#jSA: % de crecimiento anual del monto asegurado
+#jPrim: % de crecimiento quinquenal del monto asegurado
+#P_pura: prima pura
+#P_inv: prima de inventario
+#P_comerc: prima comercial
+#G_act: % de gasto actual con respecto a la prima comercial
+
+
+Provision_Gasto_Basica = 0
+
+if(((ed + ant) < rCob)&((ed + ant) <= omega_prov)){
+
+if((Plan = "01")|(Plan = "02")|(Plan = "03")|(Plan = "04")|(Plan = "05")){
+Prov = Provision_Gasto_Dotal(ed, ant, rCob, edSA, rPrim, Plan, inic, omega_prov, omega_pri, prob_muerte_prov, i_prov, jSA, jPrim, P_pura, P_inv, P_comerc, G_act)
+
+Elseif((Plan = "09")|(Plan = 12)|(Plan = 24)|(Plan = 72)|(Plan = 73)|(Plan = 74)|(Plan = 75)|(Plan = 76)|(Plan = "8A")|(Plan = "8B")|(Plan = "8C")|(Plan = "8D")){
+Prov = Provision_Gasto_Vida_Ordinaria(ed, ant, rCob, edSA, rPrim, Plan, inic, omega_prov, omega_pri, prob_muerte_prov, i_prov, jSA, jPrim, P_pura, P_inv, P_comerc, G_act)
+
+Elseif((Plan = 14)){
+Prov = Provision_Gasto_VO_Protect_Juven(ed, ant, rCob, edSA, rPrim, Plan, inic, omega_prov, omega_pri, prob_muerte_prov, i_prov, jSA, jPrim, P_pura, P_inv, P_comerc, G_act)
+
+Elseif((Plan = 21)|(Plan = 22)|(Plan = 23)|(Plan = 31)|(Plan = "S1")|(Plan = "S2")|(Plan = "S3")|(Plan = 98)|(Plan = "T1")|(Plan = "T2")|(Plan = "T3")|(Plan = "T4")){
+
+Prov = Provision_Gasto_Vida_Temporal(ed, ant, rCob, edSA, rPrim, Plan, inic, omega_prov, omega_pri, prob_muerte_prov, i_prov, jSA, jPrim, P_pura, P_inv, P_comerc, G_act)
+
+Elseif((Plan = 29)|(Plan = 62)){
+Prov = Provision_Gasto_VO_Fam(ed, ant, rCob, edSA, rPrim, Plan, inic, omega_prov, omega_pri, prob_muerte_prov, prob_muerte_cony_prov, i_prov, jSA, jPrim, P_pura, P_inv, P_comerc, G_act)
+
+Elseif((Plan = "6A")|(Plan = 93)){
+Prov = Provision_Gasto_VO_SXXI(ed, ant, rCob, edSA, rPrim, Plan, inic, omega_prov, omega_pri, prob_muerte_prov, i_prov, prob_muerte_pri, i_pri, jSA, jPrim, P_pura, P_inv, P_comerc, G_act)
+
+Elseif((Plan = 84)|(Plan = 85)|(Plan = 86)){
+Prov = Provision_Gasto_VEnt_PagLim(ed, ant, rCob, edSA, rPrim, Plan, inic, omega_prov, omega_pri, prob_muerte_prov, i_prov, prob_muerte_pri, i_pri, jSA, jPrim, P_pura, P_inv, P_comerc, G_act)
+
+Elseif((Plan = 88)){
+Prov = Provision_Gasto_VOM(ed, ant, rCob, edSA, rPrim, Plan, inic, omega_prov, omega_pri, prob_muerte_prov, i_prov, jSA, jPrim, P_pura, P_inv, P_comerc, G_act)
+
+}
+
+Provision_Gasto_Basica = Prov
+
+Else
+Provision_Gasto_Basica = 0
+}
+
+
+}
+
+
+
+ Provision_Gasto_Dotal <- function(ed, ant, rCob, edSA, rPrim, Plan, inic, omega_prov, omega_pri, prob_muerte_prov , i_prov, jSA, jPrim, P_pura, P_inv, P_comerc, G_act){
+#Planes 01, 02, 03, 04 y 05: Dotal 10, 15, 20, 25, 30 años
+
+#ed: edad de contratación
+#ant: antigüedad
+#rCob: edad límite de cobertura
+#edSA: edad límite de crecimiento del monto asegurado
+#rPrim: edad límite de pago de primas
+#Plan: número de Plan o tipo de seguro
+#inic: edad inicial de la tabla de mortalidad
+#omega_prov: edad final de la tabla de mortalidad de provisión
+#omega_pri: edad final de la tabla de mortalidad de prima
+#prob_muerte_prov: probabilidad de muerte para el cálculo de la provisión
+#i_prov: tasa de interés para provisión
+#jSA: % de crecimiento anual del monto asegurado
+#jPrim: % de crecimiento quinquenal del monto asegurado
+#P_pura: prima pura
+#P_inv: prima de inventario
+#P_comerc: prima comercial
+#G_act: % de gasto actual con respecto a la prima comercial
+
+
+k = Fix(ant)                                            #Antigüedad entera
+frac = ant - k                                          #Fracción de año póliza transcurrido
+P_Gasto = WorksheetFunction.Max(P_inv - P_pura, 0)      #Prima para gasto administrativo
+v_prov = (1 + i_prov) ^ -1                              #Función de descuento
+
+
+#Provisión año-póliza k
+
+x = ed + k                                              #Edad actual del asegurado
+n = rCob - x                                           #Temporalidad máxima del seguro
+np = rPrim - x                                             #Temporalidad de la anualidad de primas
+
+anu_temp_k = 0
+Prov_gasto_k = 0
+
+
+if((x < omega_prov)&(x < rCob)){
+prob_sb_prov = prob_Sobrev(prob_muerte_prov, x, inic, omega_prov) #Probabilidad de sobrevivencia kPx
+#Seguro temporal y anualidad temporal
+for(j in 0:(n - 1)){
+anu_temp_k = anu_temp_k + ((1 + jPrim) ^ Fix(WorksheetFunction.Max(WorksheetFunction.Min(j + k, 60 - ed - 1) / 5, 0))) * (v_prov ^ j) * prob_sb_prov(j + 1)
+}
+
+Prov_gasto_k = WorksheetFunction.Max((G_act * P_comerc - P_Gasto) * anu_temp_k, 0)
+
+}
+
+
+#Provisión año-póliza k+1
+
+k = k + 1
+x = x + 1                                               #Edad en el año-póliza k+1
+n = rCob - x                                           #Temporalidad máxima del seguro
+np = rPrim - x                                             #Temporalidad de la anualidad de primas
+
+anu_temp_k1 = 0
+Prov_gasto_k1 = 0
+
+
+if((x < omega_prov)&(x < rCob)){
+prob_sb_prov = prob_Sobrev(prob_muerte_prov, x, inic, omega_prov) #Probabilidad de sobrevivencia kPx
+#Seguro temporal y anualidad temporal
+for(j in 0:(n - 1)){
+anu_temp_k1 = anu_temp_k1 + ((1 + jPrim) ^ Fix(WorksheetFunction.Max(WorksheetFunction.Min(j + k, 60 - ed - 1) / 5, 0))) * (v_prov ^ j) * prob_sb_prov(j + 1)
+}
+Prov_gasto_k1 = WorksheetFunction.Max((G_act * P_comerc - P_Gasto) * anu_temp_k1, 0)
+
+}
+
+
+if((ed + ant) < rCob){
+Provision_Gasto_Dotal = (1 - frac) * (Prov_gasto_k + P_Gasto) + frac * (Prov_gasto_k1)
+Else
+Provision_Gasto_Dotal = 0
+}
+
+
+}
+
+
+ Provision_Gasto_Vida_Ordinaria <- function(ed, ant, rCob, edSA, rPrim, Plan, inic, omega_prov, omega_pri, prob_muerte_prov , i_prov, jSA, jPrim, P_pura, P_inv, P_comerc, G_act){
+#Planes 09, 12, 24, 72-76. VO Vitalic con partic, Vida Entera 20 pagos, VO Vitalic sin partic, VOSE 10, VOSE 15, VOSE 20, VOSE 25, VOSE 30
+
+#ed: edad de contratación
+#ant: antigüedad
+#rCob: edad límite de cobertura
+#edSA: edad límite de crecimiento del monto asegurado
+#rPrim: edad límite de pago de primas
+#Plan: número de Plan o tipo de seguro
+#inic: edad inicial de la tabla de mortalidad
+#omega_prov: edad final de la tabla de mortalidad de provisión
+#omega_pri: edad final de la tabla de mortalidad de prima
+#prob_muerte_prov: probabilidad de muerte para provisión
+#i_prov: tasa de interés para provisión
+#jSA: % de crecimiento anual del monto asegurado
+#jPrim: % de crecimiento quinquenal del monto asegurado
+#P_pura: prima pura
+#P_inv: prima de inventario
+#P_comerc: prima comercial
+#G_act: % de gasto actual con respecto a la prima comercial
+
+
+k = Fix(ant)                                        #Antigüedad entera
+frac = ant - k                                      #Fracción de año póliza transcurrido
+P_Gasto = WorksheetFunction.Max(P_inv - P_pura, 0)  #Prima para gasto de administración
+v_prov = (1 + i_prov) ^ -1                          #Función de descuento
+
+
+#Provisión año-póliza k
+
+x = ed + k                                            #Edad actual del asegurado
+n = rCob - x                                          #Temporalidad máxima del seguro
+np = rPrim - x                                        #Temporalidad de la anualidad de primas
+
+anu_temp_k = 0
+anu_vital_k = 0
+Prov_gasto_k = 0
+
+
+if((x < omega_prov)&(x < rCob)){
+prob_sb_prov = prob_Sobrev(prob_muerte_prov, x, inic, omega_prov) #Probabilidad de sobrevivencia kPx
+#Anualidad de primas durante np años
+if((x < rPrim)){
+for(j in 0:(np - 1)){
+anu_temp_k = anu_temp_k + ((1 + jPrim) ^ Fix(WorksheetFunction.Max(WorksheetFunction.Min(j + k, 60 - ed - 1) / 5, 0))) * (v_prov ^ j) * prob_sb_prov(j + 1)
+}
+}
+#Anualidad vitalicia
+if((x < omega_prov)){
+for(j in 0:(n - 1)){
+anu_vital_k = anu_vital_k + ((1 + jPrim) ^ Fix(WorksheetFunction.Max(WorksheetFunction.Min(j + k, 60 - ed - 1) / 5, 0))) * (v_prov ^ j) * prob_sb_prov(j + 1)
+}
+}
+
+Prov_gasto_k = WorksheetFunction.Max(G_act * P_comerc * anu_vital_k - P_Gasto * anu_temp_k, 0)
+
+}
+
+
+
+
+k = k + 1
+x = x + 1                                                     #Edad en el año-póliza k+1
+n = rCob - x                                                  #Temporalidad máxima del seguro
+np = rPrim - x                                                #Temporalidad de la anualidad de primas
+
+anu_temp_k1 = 0
+anu_vital_k1 = 0
+Prov_gasto_k1 = 0
+
+
+if((x < omega_prov)&(x < rCob)){
+prob_sb_prov = prob_Sobrev(prob_muerte_prov, x, inic, omega_prov) #Probabilidad de sobrevivencia kPx
+#Anualidad de primas durante np años
+if((x < rPrim)){
+for(j in 0:(np - 1)){
+anu_temp_k1 = anu_temp_k1 + ((1 + jPrim) ^ Fix(WorksheetFunction.Max(WorksheetFunction.Min(j + k, 60 - ed - 1) / 5, 0))) * (v_prov ^ j) * prob_sb_prov(j + 1)
+}
+}
+#Anualidad vitalicia
+if((x < omega_prov)){
+for(j in 0:(n - 1)){
+anu_vital_k1 = anu_vital_k1 + ((1 + jPrim) ^ Fix(WorksheetFunction.Max(WorksheetFunction.Min(j + k, 60 - ed - 1) / 5, 0))) * (v_prov ^ j) * prob_sb_prov(j + 1)
+}
+}
+
+Prov_gasto_k1 = WorksheetFunction.Max(G_act * P_comerc * anu_vital_k1 - P_Gasto * anu_temp_k1, 0)
+
+}
+
+
+
+if((ed + ant) < rCob){
+Provision_Gasto_Vida_Ordinaria = (1 - frac) * (Prov_gasto_k + P_Gasto) + frac * (Prov_gasto_k1)
+Else
+Provision_Gasto_Vida_Ordinaria = 0
+}
+
+
+
+}
+
+
+ Provision_Gasto_Vida_Temporal <- function(ed, ant, rCob, edSA, rPrim, Plan, inic, omega_prov, omega_pri, prob_muerte_prov , i_prov, jSA, jPrim, P_pura, P_inv, P_comerc, G_act){
+#Planes 21-23, 31, S1-S3, T1-T4, 98:
+#Temporal Serie Econ. 5, 15, 20, 10; Temporal Serie Econ. 5, 15, 20;
+#Temporal Ent. Finac. 5, 5, 10, 15; Temporal Serie Econ. edad 65.
+
+#ed: edad de contratación
+#ant: antigüedad
+#rCob: edad límite de cobertura
+#edSA: edad límite de crecimiento del monto asegurado
+#rPrim: edad límite de pago de primas
+#Plan: número de Plan o tipo de seguro
+#inic: edad inicial de la tabla de mortalidad
+#omega_prov: edad final de la tabla de mortalidad de provisión
+#omega_pri: edad final de la tabla de mortalidad de prima
+#prob_muerte_prov: probabilidad de muerte para provisión
+#i_prov: tasa de interés para provisión
+#jSA: % de crecimiento anual del monto asegurado
+#jPrim: % de crecimiento quinquenal del monto asegurado
+#P_pura: prima pura
+#P_inv: prima de inventario
+#P_comerc: prima comercial
+#G_act: % de gasto actual con respecto a la prima comercial
+
+
+k = Fix(ant)                                        #Antigüedad entera
+frac = ant - k                                      #Fracción de año póliza transcurrido
+P_Gasto = WorksheetFunction.Max(P_inv - P_pura, 0)  #Prima para gasto de administración
+v_prov = (1 + i_prov) ^ -1                          #Función de descuento
+
+
+#Provisión año-póliza k
+
+x = ed + k                                                  #Edad actual del asegurado
+n = rCob - x                                                #Temporalidad máxima del seguro
+np = rPrim - x                                              #Temporalidad de la anualidad de primas
+
+anu_temp_k = 0
+Prov_gasto_k = 0
+
+if((x < omega_prov)&(x < rCob)){
+prob_sb_prov = prob_Sobrev(prob_muerte_prov, x, inic, omega_prov) #Probabilidad de sobrevivencia kPx
+#Seguro y anualidad temporal
+for(j in 0:(n - 1)){
+anu_temp_k = anu_temp_k + ((1 + jPrim) ^ Fix(WorksheetFunction.Max(WorksheetFunction.Min(j + k, 60 - ed - 1) / 5, 0))) * (v_prov ^ j) * prob_sb_prov(j + 1)
+}
+
+Prov_gasto_k = WorksheetFunction.Max((G_act * P_comerc - P_Gasto) * anu_temp_k, 0)
+
+}
+
+
+
+#Provisión año-póliza k+1
+
+k = k + 1
+x = x + 1                                                   #Edad en el año-póliza k+1
+n = rCob - x                                               #Temporalidad máxima del seguro
+np = rPrim - x                                                 #Temporalidad de la anualidad de primas
+
+anu_temp_k1 = 0
+Prov_gasto_k1 = 0
+
+
+if((x < omega_prov)&(x < rCob)){
+prob_sb_prov = prob_Sobrev(prob_muerte_prov, x, inic, omega_prov) #Probabilidad de sobrevivencia kPx
+#Seguro y anualidad temporal
+for(j in 0:(n - 1)){
+anu_temp_k1 = anu_temp_k1 + ((1 + jPrim) ^ Fix(WorksheetFunction.Max(WorksheetFunction.Min(j + k, 60 - ed - 1) / 5, 0))) * (v_prov ^ j) * prob_sb_prov(j + 1)
+}
+
+Prov_gasto_k1 = WorksheetFunction.Max((G_act * P_comerc - P_Gasto) * anu_temp_k1, 0)
+
+}
+
+
+if((ed + ant) < rCob){
+Provision_Gasto_Vida_Temporal = (1 - frac) * (Prov_gasto_k + P_Gasto) + frac * (Prov_gasto_k1)
+Else
+Provision_Gasto_Vida_Temporal = 0
+}
+
+
+}
+
+
+
+ Provision_Gasto_VO_Protect_Juven <- function(ed, ant, rCob, edSA, rPrim, Plan, inic, omega_prov, omega_pri, prob_muerte_prov , i_prov, jSA, jPrim, P_pura, P_inv, P_comerc, G_act){
+#Plan 14: Vida Ordinaria Protectora Juvenil
+
+#ed: edad de contratación
+#ant: antigüedad
+#rCob: edad límite de cobertura
+#edSA: edad límite de crecimiento del monto asegurado
+#rPrim: edad límite de pago de primas
+#Plan: número de Plan o tipo de seguro
+#inic: edad inicial de la tabla de mortalidad
+#omega_prov: edad final de la tabla de mortalidad de provisión
+#omega_pri: edad final de la tabla de mortalidad de prima
+#prob_muerte_prov: probabilidad de muerte para provisión
+#i_prov: tasa de interés para provisión
+#jSA: % de crecimiento anual del monto asegurado
+#jPrim: % de crecimiento quinquenal del monto asegurado
+#P_pura: prima pura
+#P_inv: prima de inventario
+#P_comerc: prima comercial
+#G_act: % de gasto actual con respecto a la prima comercial
+
+
+k = Fix(ant)                                        #Antigüedad entera
+frac = ant - k                                      #Fracción de año póliza transcurrido
+P_Gasto = WorksheetFunction.Max(P_inv - P_pura, 0)  #Prima para gasto de administración
+v_prov = (1 + i_prov) ^ -1                          #Función de descuento
+
+
+#Provisión año-póliza k
+
+x = ed + k                                          #Edad actual del asegurado
+n = rCob - x                                        #Temporalidad máxima del seguro
+np = rPrim - x                                      #Temporalidad de la anualidad de primas
+
+anu_temp_k = 0
+anu_vital_k = 0
+Prov_gasto_k = 0
+
+
+if((x < omega_prov)&(x < rCob)){
+
+prob_sb_prov = prob_Sobrev(prob_muerte_prov, x, inic, omega_prov)     #Probabilidad de sobrevivencia kPx
+#Anualidad hasta la edad 65
+if((x < rPrim)){
+for(j in 0:(np - 1)){
+anu_temp_k = anu_temp_k + ((1 + jPrim) ^ Fix(WorksheetFunction.Max(WorksheetFunction.Min(j + k, 60 - ed - 1) / 5, 0))) * (v_prov ^ j) * prob_sb_prov(j + 1)
+}
+}
+#Anualidad vitalicia
+if((x < omega_prov)){
+for(j in 0:(n - 1)){
+anu_vital_k = anu_vital_k + ((1 + jPrim) ^ Fix(WorksheetFunction.Max(WorksheetFunction.Min(j + k, 60 - ed - 1) / 5, 0))) * (v_prov ^ j) * prob_sb_prov(j + 1)
+}
+}
+
+Prov_gasto_k = WorksheetFunction.Max(G_act * P_comerc * anu_vital_k - P_Gasto * anu_temp_k, 0)
+
+}
+
+
+#Provisión año-póliza k+1
+
+k = k + 1
+x = x + 1                                                   #Edad en el año-póliza k+1
+n = rCob - x                                               #Temporalidad máxima del seguro
+np = rPrim - x                                                 #Temporalidad de la anualidad de primas
+
+anu_temp_k1 = 0
+anu_vital_k1 = 0
+Prov_gasto_k1 = 0
+
+
+if((x < omega_prov)&(x < rCob)){
+prob_sb_prov = prob_Sobrev(prob_muerte_prov, x, inic, omega_prov)     #Probabilidad de sobrevivencia kPx
+#Anualidad hasta la edad 65
+if((x < rPrim)){
+for(j in 0:(np - 1)){
+anu_temp_k1 = anu_temp_k1 + ((1 + jPrim) ^ Fix(WorksheetFunction.Max(WorksheetFunction.Min(j + k, 60 - ed - 1) / 5, 0))) * (v_prov ^ j) * prob_sb_prov(j + 1)
+}
+}
+#Anualidad vitalicia
+if((x < omega_prov)){
+for(j in 0:(n - 1)){
+anu_vital_k1 = anu_vital_k1 + ((1 + jPrim) ^ Fix(WorksheetFunction.Max(WorksheetFunction.Min(j + k, 60 - ed - 1) / 5, 0))) * (v_prov ^ j) * prob_sb_prov(j + 1)
+}
+}
+
+Prov_gasto_k1 = WorksheetFunction.Max(G_act * P_comerc * anu_vital_k1 - P_Gasto * anu_temp_k1, 0)
+
+}
+
+
+if((ed + ant) < rCob){
+Provision_Gasto_VO_Protect_Juven = (1 - frac) * (Prov_gasto_k + P_Gasto) + frac * (Prov_gasto_k1)
+Else
+Provision_Gasto_VO_Protect_Juven = 0
+}
+
+
+}
+
+
+ Provision_Gasto_VO_Fam <- function(ed, ant, rCob, edSA, rPrim, Plan, inic, omega_prov, omega_pri, prob_muerte_prov , prob_muerte_cony_prov , i_prov, jSA, jPrim, P_pura, P_inv, P_comerc, G_act){
+#Planes 29, 62: Vida Ordinaria Familiar, Vida Ordinaria Familiar Saldada
+
+#ed: edad de contratación
+#ant: antigüedad
+#rCob: edad límite de cobertura
+#edSA: edad límite de crecimiento del monto asegurado
+#rPrim: edad límite de pago de primas
+#Plan: número de Plan o tipo de seguro
+#inic: edad inicial de la tabla de mortalidad
+#omega_prov: edad final de la tabla de mortalidad de provisión
+#omega_pri: edad final de la tabla de mortalidad de prima
+#prob_muerte_prov: probabilidad de muerte del asegurado
+#prob_muerte_cony_prov: probabilidad de muerte del cónyuge
+#i_prov: tasa de interés para provisión
+#jSA: % de crecimiento anual del monto asegurado
+#jPrim: % de crecimiento quinquenal del monto asegurado
+#P_pura: prima pura
+#P_inv: prima de inventario
+#P_comerc: prima comercial
+#G_act: % de gasto actual con respecto a la prima comercial
+
+
+k = Fix(ant)                                        #Antigüedad entera
+frac = ant - k                                      #Fracción de año póliza transcurrido
+P_Gasto = WorksheetFunction.Max(P_inv - P_pura, 0)  #Prima para gasto de administración
+v_prov = (1 + i_prov) ^ -1                          #Función de descuento
+
+ed_c = ed                                           #Se asume que el cónyuge tiene la misma edad que el asegurado directo
+ed_h = 4                                             #Se asume que los hijos tienen el mismo género que el asegurado directo y tienen 4 años al momento de emisión de la póliza
+cant_h = 5                                          #Se asume que en promedio las familias tienen 5 hijos
+                                                    #Hipótesis tomadas de la Nota Técnica de cálculo de la provisión
+rh = 25                                             #Edad límite de cobertura de hijos
+
+
+#Provisión año-póliza k
+
+x = ed + k                                           #Edad actual del asegurado
+x_c = ed_c + k                                       #Edad actual del cónyuge
+x_h = ed_h + k                                       #Edad actual del hijo
+n = rCob - x                                         #Temporalidad máxima del seguro para asegurado directo y cónyuge
+nh = rh - x_h                                        #Temporalidad máxima del seguro para hijos
+np = rPrim - x                                       #Temporalidad de la anualidad de primas
+
+Prov_gasto_k = 0
+anu_vital_k = 0
+anu_temp_k = 0
+
+if((x < omega_prov)&(x < rCob)){
+
+prob_sb_x = prob_Sobrev(prob_muerte_prov, x, inic, omega_prov)        #Probabilidad de sobrevivencia kPx
+prob_sb_c = prob_Sobrev(prob_muerte_cony_prov, x_c, inic, omega_prov) #Probabilidad de sobrevivencia kPc
+
+#Anualidad de primas
+if((x < rPrim)){
+for(j in 0:(np - 1)){
+anu_temp_k = anu_temp_k + ((1 + jPrim) ^ Fix(WorksheetFunction.Max(WorksheetFunction.Min(j + k, 60 - ed - 1) / 5, 0))) * (v_prov ^ j) * prob_sb_x(j + 1)
+}
+}
+#Anualidad vitalicia
+if((x < omega_prov)){
+for(j in 0:(n - 1)){
+anu_vital_k = anu_vital_k + ((1 + jPrim) ^ Fix(WorksheetFunction.Max(WorksheetFunction.Min(j + k, 60 - ed - 1) / 5, 0))) * (v_prov ^ j) * prob_sb_x(j + 1)
+}
+}
+
+Prov_gasto_k = WorksheetFunction.Max(G_act * P_comerc * anu_vital_k - P_Gasto * anu_temp_k, 0)
+
+}
+
+
+
+
+#Provisión año-póliza k+1
+
+k = k + 1
+x = x + 1                                            #Edad en el año-póliza k+1
+x_c = x_c + 1                                        #Edad actual del cónyuge
+x_h = x_h + 1                                        #Edad actual del hijo
+n = rCob - x                                         #Temporalidad máxima del seguro para asegurado directo y cónyuge
+nh = rh - x_h                                        #Temporalidad máxima del seguro para hijos
+np = rPrim - x                                       #Temporalidad de la anualidad de primas
+
+Prov_gasto_k1 = 0
+anu_temp_k1 = 0
+anu_vital_k1 = 0
+
+if((x < omega_prov)&(x < rCob)){
+
+prob_sb_x = prob_Sobrev(prob_muerte_prov, x, inic, omega_prov)        #Probabilidad de sobrevivencia kPx
+prob_sb_c = prob_Sobrev(prob_muerte_cony_prov, x_c, inic, omega_prov) #Probabilidad de sobrevivencia kPc
+
+#Anualidad de primas
+if((x < rPrim)){
+for(j in 0:(np - 1)){
+anu_temp_k1 = anu_temp_k1 + ((1 + jPrim) ^ Fix(WorksheetFunction.Max(WorksheetFunction.Min(j + k, 60 - ed - 1) / 5, 0))) * (v_prov ^ j) * prob_sb_x(j + 1)
+}
+}
+#Anualidad vitalicia
+if((x < omega_prov)){
+for(j in 0:(n - 1)){
+anu_vital_k1 = anu_vital_k1 + ((1 + jPrim) ^ Fix(WorksheetFunction.Max(WorksheetFunction.Min(j + k, 60 - ed - 1) / 5, 0))) * (v_prov ^ j) * prob_sb_x(j + 1)
+}
+}
+
+Prov_gasto_k1 = WorksheetFunction.Max(G_act * P_comerc * anu_vital_k1 - P_Gasto * anu_temp_k1, 0)
+
+}
+
+
+if((ed + ant) < rCob){
+Provision_Gasto_VO_Fam = (1 - frac) * (Prov_gasto_k + P_Gasto) + frac * (Prov_gasto_k1)
+Else
+Provision_Gasto_VO_Fam = 0
+}
+
+
+}
+
+
+ Provision_Gasto_VO_SXXI <- function(ed, ant, rCob, edSA, rPrim, Plan, inic, omega_prov, omega_pri, prob_muerte_prov , i_prov, prob_muerte_pri , i_pri, jSA, jPrim, P_pura, P_inv, P_comerc, G_act){
+#Planes 6A, 93: Vida Ordinaria (3era Edad), VO Ejecutivo Siglo XXI
+
+#ed: edad de contratación
+#ant: antigüedad
+#rCob: edad límite de cobertura
+#edSA: edad límite de crecimiento del monto asegurado
+#rPrim: edad límite de pago de primas
+#Plan: número de Plan o tipo de seguro
+#inic: edad inicial de la tabla de mortalidad
+#omega_prov: edad final de la tabla de mortalidad de provisión
+#omega_pri: edad final de la tabla de mortalidad de prima
+#prob_muerte_prov: probabilidad de muerte para provisión
+#i_prov: tasa de interés para provisión
+#prob_muerte_pri: probabilidad de muerte para prima
+#i_pri: tasa de interés para prima
+#jSA: % de crecimiento anual del monto asegurado
+#jPrim: % de crecimiento quinquenal del monto asegurado
+#P_pura: prima pura
+#P_inv: prima de inventario
+#P_comerc: prima comercial
+#G_act: % de gasto actual con respecto a la prima comercial
+
+
+k = Fix(ant)                                        #Antigüedad entera
+frac = ant - k                                      #Fracción de año póliza transcurrido
+P_Gasto = WorksheetFunction.Max(P_inv - P_pura, 0)  #Prima para gastos administrativos
+v_prov = (1 + i_prov) ^ -1                          #Función de descuento para provisión
+x = ed + k                                          #Edad actual del asegurado
+n = rCob - x                                        #Temporalidad máxima del seguro
+np = rPrim - x                                      #Temporalidad de la anualidad de primas
+               
+
+if((x < omega_prov)&(x < rCob)){
+
+#Provisión año-póliza k
+anu_temp_k = 0
+anu_vital_k = 0
+Prov_gasto_k = 0
+prob_sb_prov = prob_Sobrev(prob_muerte_prov, x, inic, omega_prov) #Probabilidad de sobrevivencia kPx
+#Anualidad hasta los 90 años para (x+k)
+for(j in 0:(np - 1)){
+anu_temp_k = anu_temp_k + ((1 + jPrim) ^ Fix(WorksheetFunction.Max(WorksheetFunction.Min(j + k, 60 - ed - 1) / 5, 0))) * (v_prov ^ j) * prob_sb_prov(j + 1)
+}
+#Anualidad vitalicia
+if((x < omega_prov)){
+for(j in 0:(n - 1)){
+anu_vital_k = anu_vital_k + ((1 + jPrim) ^ Fix(WorksheetFunction.Max(WorksheetFunction.Min(j + k, 60 - ed - 1) / 5, 0))) * (v_prov ^ j) * prob_sb_prov(j + 1)
+}
+}
+
+Prov_gasto_k = WorksheetFunction.Max(G_act * P_comerc * anu_vital_k - P_Gasto * anu_temp_k, 0)
+
+}
+
+
+
+#Provisión año-póliza k+1
+
+k = k + 1
+x = x + 1                                               #Edad en el año-póliza k+1
+n = rCob - x                                            #Temporalidad máxima del seguro
+np = rPrim - x                                          #Temporalidad de la anualidad de primas
+
+anu_temp_k1 = 0
+anu_vital_k1 = 0
+Prov_gasto_k1 = 0
+
+#Provisión según rango de antigüedad
+
+if((x < omega_prov)&(x < rCob)){
+prob_sb_prov = prob_Sobrev(prob_muerte_prov, x, inic, omega_prov) #Probabilidad de sobrevivencia kPx
+#Anualidad hasta los 90 años para (x+k)
+for(j in 0:(np - 1)){
+anu_temp_k1 = anu_temp_k1 + ((1 + jPrim) ^ Fix(WorksheetFunction.Max(WorksheetFunction.Min(j + k, 60 - ed - 1) / 5, 0))) * (v_prov ^ j) * prob_sb_prov(j + 1)
+}
+#Anualidad vitalicia
+if((x < omega_prov)){
+for(j in 0:(n - 1)){
+anu_vital_k1 = anu_vital_k1 + ((1 + jPrim) ^ Fix(WorksheetFunction.Max(WorksheetFunction.Min(j + k, 60 - ed - 1) / 5, 0))) * (v_prov ^ j) * prob_sb_prov(j + 1)
+}
+}
+
+Prov_gasto_k1 = WorksheetFunction.Max(G_act * P_comerc * anu_vital_k1 - P_Gasto * anu_temp_k1, 0)
+
+}
+
+
+if((ed + ant) < rCob){
+Provision_Gasto_VO_SXXI = (1 - frac) * (Prov_gasto_k + P_Gasto) + frac * (Prov_gasto_k1)
+Else
+Provision_Gasto_VO_SXXI = 0
+}
+
+
+}
+
+
+
+ Provision_Gasto_VOM <- function(ed, ant, rCob, edSA, rPrim, Plan, inic, omega_prov, omega_pri, prob_muerte_prov , i_prov, jSA, jPrim, P_pura, P_inv, P_comerc, G_act){
+#Plan 88:VOM
+
+#ed: edad de contratación
+#ant: antigüedad
+#rCob: edad límite de cobertura
+#edSA: edad límite de crecimiento del monto asegurado
+#rPrim: edad límite de pago de primas
+#Plan: número de Plan o tipo de seguro
+#inic: edad inicial de la tabla de mortalidad
+#omega_prov: edad final de la tabla de mortalidad de provisión
+#omega_pri: edad final de la tabla de mortalidad de prima
+#prob_muerte_prov: probabilidad de muerte
+#i_prov: tasa de interés para provisión
+#jSA: % de crecimiento anual del monto asegurado
+#jPrim: % de crecimiento quinquenal del monto asegurado
+#P_pura: prima pura
+#P_inv: prima de inventario
+#P_comerc: prima comercial
+#G_act: % de gasto actual con respecto a la prima comercial
+
+
+
+k = Fix(ant)                                        #Antigüedad entera
+frac = ant - k                                      #Fracción de año póliza transcurrido
+P_Gasto = WorksheetFunction.Max(P_inv - P_pura, 0)  #Prima para gasto de administración
+v_prov = (1 + i_prov) ^ -1                          #Función de descuento para provisión
+
+
+#Provisión año-póliza k
+
+x = ed + k                                           #Edad actual del asegurado
+n = rCob - x                                         #Temporalidad máxima del seguro
+np = rPrim - x                                       #Temporalidad de la anualidad de primas
+
+anu_temp_k = 0
+Prov_gasto_k = 0
+
+
+if((x < omega_prov)&(x < rCob)){
+prob_sb_prov = prob_Sobrev(prob_muerte_prov, x, inic, omega_prov) #Probabilidad de sobrevivencia kPx
+#Anualidad vitalicia para (x+k)
+if(x < rPrim){
+for(j in 0:(np - 1)){
+if((k + j) <= 4){                               #La prima se duplica a partir de k = 5
+dob = 1
+Else
+dob = 2
+}
+anu_temp_k = anu_temp_k + dob * ((1 + jPrim) ^ Fix(WorksheetFunction.Max(WorksheetFunction.Min(j + k, 60 - ed - 1) / 5, 0))) * (v_prov ^ j) * prob_sb_prov(j + 1)
+}
+}
+
+Prov_gasto_k = WorksheetFunction.Max((G_act * P_comerc - P_Gasto) * anu_temp_k, 0)
+
+}
+
+
+#Provisión año-póliza k+1
+k = k + 1
+x = x + 1                                          #Edad en el año-póliza k+1
+n = rCob - x                                      #Temporalidad máxima del seguro
+np = rPrim - x                                        #Temporalidad de la anualidad de primas
+anu_temp_k1 = 0
+anu_vital_k1 = 0
+Prov_gasto_k1 = 0
+
+
+if((x < omega_prov)&(x < rCob)){
+prob_sb_prov = prob_Sobrev(prob_muerte_prov, x, inic, omega_prov) #Probabilidad de sobrevivencia kPx
+#Anualidad vitalicia
+if(x < rPrim){
+for(j in 0:(np - 1)){
+if((k + j) <= 4){
+dob = 1
+Else
+dob = 2
+}
+anu_temp_k1 = anu_temp_k1 + dob * ((1 + jPrim) ^ Fix(WorksheetFunction.Max(WorksheetFunction.Min(j + k, 60 - ed - 1) / 5, 0))) * (v_prov ^ j) * prob_sb_prov(j + 1)
+}
+}
+
+Prov_gasto_k1 = WorksheetFunction.Max((G_act * P_comerc - P_Gasto) * anu_temp_k1, 0)
+
+}
+
+if((ed + ant) < rCob){
+Provision_Gasto_VOM = (1 - frac) * (Prov_gasto_k + P_Gasto) + frac * (Prov_gasto_k1)
+Else
+Provision_Gasto_VOM = 0
+}
+
+
+
+
+}
+
+
+ Provision_Gasto_VEnt_PagLim <- function(ed, ant, rCob, edSA, rPrim, Plan, inic, omega_prov, omega_pri, prob_muerte_prov , i_prov, prob_muerte_pri , i_pri, jSA, jPrim, P_pura, P_inv, P_comerc, G_act){
+#Planes 84, 85, 86: Vida Entera 15, 20, 25 pagos, sin participación
+
+#ed: edad de contratación
+#ant: antigüedad
+#rCob: edad límite de cobertura
+#edSA: edad límite de crecimiento del monto asegurado
+#rPrim: edad límite de pago de primas
+#Plan: número de Plan o tipo de seguro
+#inic: edad inicial de la tabla de mortalidad
+#omega_prov: edad final de la tabla de mortalidad de provisión
+#omega_pri: edad final de la tabla de mortalidad de prima
+#prob_muerte_prov: probabilidad de muerte
+#i_prov: tasa de interés para provisión
+#jSA: % de crecimiento anual del monto asegurado
+#jPrim: % de crecimiento quinquenal del monto asegurado
+#P_pura: prima pura
+#P_inv: prima de inventario
+#P_comerc: prima comercial
+#G_act: % de gasto actual con respecto a la prima comercial
+
+
+k = Fix(ant)                                        #Antigüedad entera
+frac = ant - k                                      #Fracción de año póliza transcurrido
+P_Gasto = WorksheetFunction.Max(P_inv - P_pura, 0)  #Prima para gasto de administración
+v_prov = (1 + i_prov) ^ -1                          #Función de descuento para provisión
+
+
+
+#Provisión año-póliza k
+
+x = ed + k                                                  #Edad actual del asegurado
+n = rCob - x                                               #Temporalidad máxima del seguro
+np = rPrim - x                                                 #Temporalidad de la anualidad de primas
+
+anu_temp_k = 0
+anu_vital_k = 0
+Prov_gasto_k = 0
+
+
+if((x < omega_prov)&(x < rCob)){
+prob_sb_prov = prob_Sobrev(prob_muerte_prov, x, inic, omega_prov) #Probabilidad de sobrevivencia kPx
+#Anualidad por np años para (x+k)
+if(x < rPrim){
+for(j in 0:(np - 1)){
+anu_temp_k = anu_temp_k + ((1 + jPrim) ^ Fix(WorksheetFunction.Max(WorksheetFunction.Min(j + k, 60 - ed - 1) / 5, 0))) * (v_prov ^ j) * prob_sb_prov(j + 1)
+}
+}
+#Anualidad vitalicia
+if((x < omega_prov)){
+for(j in 0:(n - 1)){
+anu_vital_k = anu_vital_k + ((1 + jPrim) ^ Fix(WorksheetFunction.Max(WorksheetFunction.Min(j + k, 60 - ed - 1) / 5, 0))) * (v_prov ^ j) * prob_sb_prov(j + 1)
+}
+}
+
+Prov_gasto_k = WorksheetFunction.Max(G_act * P_comerc * anu_vital_k - P_Gasto * anu_temp_k, 0)
+
+}
+
+
+#Provisión año-póliza k+1
+k = k + 1
+x = x + 1                                          #Edad en el año-póliza k+1
+n = rCob - x                                      #Temporalidad máxima del seguro
+np = rPrim - x                                        #Temporalidad de la anualidad de primas
+
+anu_temp_k1 = 0
+anu_vital_k1 = 0
+Prov_gasto_k1 = 0
+
+
+if((x < omega_prov)&(x < rCob)){
+prob_sb_prov = prob_Sobrev(prob_muerte_prov, x, inic, omega_prov) #Probabilidad de sobrevivencia kPx
+#Anualidad hasta edad rPrim
+if(x < rPrim){
+for(j in 0:(np - 1)){
+anu_temp_k1 = anu_temp_k1 + ((1 + jPrim) ^ Fix(WorksheetFunction.Max(WorksheetFunction.Min(j + k, 60 - ed - 1) / 5, 0))) * (v_prov ^ j) * prob_sb_prov(j + 1)
+}
+}
+#Anualidad vitalicia
+if((x < omega_prov)){
+for(j in 0:(n - 1)){
+anu_vital_k1 = anu_vital_k1 + ((1 + jPrim) ^ Fix(WorksheetFunction.Max(WorksheetFunction.Min(j + k, 60 - ed - 1) / 5, 0))) * (v_prov ^ j) * prob_sb_prov(j + 1)
+}
+}
+
+Prov_gasto_k1 = WorksheetFunction.Max(G_act * P_comerc * anu_vital_k1 - P_Gasto * anu_temp_k1, 0)
+
+}
+
+
+if((ed + ant) < rCob){
+Provision_Gasto_VEnt_PagLim = (1 - frac) * (Prov_gasto_k + P_Gasto) + frac * (Prov_gasto_k1)
+Else
+Provision_Gasto_VEnt_PagLim = 0
+}
+
+
+}
+
+

@@ -1,0 +1,58 @@
+Function tpx(x As Double, t As Double, qx As Range, g As Double)
+'g = 1 Hombres
+'g = 2 Mujeres
+
+tpx = 1
+
+If t >= 1 Then
+For i = 1 To t
+    tpx = tpx * (1 - qx.Cells(x + i, g))
+Next i
+End If
+
+End Function
+
+Function anualidadvida(qy As Range, y As Integer, w As Double, r As Double, g As Double)
+
+Dim k As Double
+'g = 1 Hombres
+'g = 2 Mujeres
+
+sumay = 0
+
+    For k = 0 To w - y
+
+        sumay = sumay + (v(r) ^ (k)) * tpx(y - 15, k, qy, g)
+
+    Next k
+    
+anualidadvida = sumay - 11 / 24
+
+
+End Function
+
+
+Function anualidadtemporalentm(qy As Range, y As Double, r As Double, n As Double, g As Double)
+y = Round(y, 0)
+
+Dim k As Double
+'g = 1 Hombres
+'g = 2 Mujeres
+
+sumay = 0
+
+If n > 0 Then
+
+    For k = 0 To n - 1
+    
+        sumay = sumay + (v(r) ^ (k)) * tpx(y, k, qy, g)
+       
+    Next k
+
+Else
+sumay = 99
+End If
+
+anualidadtemporalentm = sumay - 11 / 24 * (1 - ((v(r) ^ (n)) * tpx(y, n, qy, g)))
+    
+End Function

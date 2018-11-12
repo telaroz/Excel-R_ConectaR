@@ -1,0 +1,131 @@
+#Funcion para el kpx
+kpx <- function(x , k , qx , w ){
+
+
+j = 0
+P = 1
+  if(x + k > w){
+    kpx = 0
+
+    Else
+    
+       for(j in 0:(k - 1)){
+       P = P * (1 - qx.Cells(x + j + 1, 1).Value)
+       
+       }
+       
+    kpx = P
+    
+}
+
+}
+
+#Anualidad vida entera que paga al inicio del período (período de un año)
+adospuntos_x <- function(x , i , qx , w ){
+
+
+
+
+j = 0
+r = 0
+v = (1 + i) ^ (-1)
+    
+for(j in 0:(w - 1)){
+r = r + ((v ^ j) * kpx(x, j, qx, w))
+}
+
+adospuntos_x = r
+
+
+}
+#Anualidad vida entera que paga al inicio del período (por m-ésimos)
+adospuntos_x_m <- function(x , i , qx , w ){
+
+
+
+
+j = 0
+r = 0
+v = (1 + i) ^ (-1)
+
+for(j in 0:(w - 1)){
+r = r + ((v ^ j) * kpx(x, j, qx, w))
+}
+
+adospuntos_x_m = r - 11 / 24
+
+
+}
+#Anualidad temporal que paga al inicio del período (por m-ésimos)
+adospuntos_xn_m <- function(x , i , qx , w , n ){
+
+
+
+
+j = 0
+r = 0
+v = (1 + i) ^ (-1)
+
+for(j in 0:(n - 1)){
+r = r + ((v ^ j) * kpx(x, j, qx, w))
+}
+
+adospuntos_xn_m = r - 11 / 24
+
+
+}
+
+#Calcula la anualidad diferida individual pagada por m-ésimos
+# n es el parámetro de diferimiento
+n_adospuntos_x_m <- function(x , n , i , qx , w ){
+v = (1 + i) ^ (-1)
+n_adospuntos_x_m = (adospuntos_x(x + n, i, qx, w) - 11 / 24) * kpx(x, n, qx, w) * v ^ n
+
+}
+
+
+#Calcula la anualidad diferida conjunta aproximada por m-ésimos
+#n es el período de diferimiento
+n_adospuntos_xy_m <- function(x , y , n , i , qx , w ){
+
+
+
+
+
+j = n
+r = 0
+v = (1 + i) ^ (-1)
+
+  
+for(j in n:(w - 1)){
+r = r + ((v ^ j) * kpx(x, j, qx, w) * kpx(y, j, qx, w))
+}
+
+n_adospuntos_xy_m = r - 11 / 24
+
+}
+
+
+
+#Calcula la anualidad temporal conjunta aproximada por m-ésimos para un menor de edad beneficiario de fallecimiento
+adospuntos_xyn_m <- function(x_hijo_menor_edad , y , i , qx , w ){
+
+
+
+
+
+j = n
+r = 0
+v = (1 + i) ^ (-1)
+
+  
+for(j in n:(17 - x_hijo_menor_edad)){
+r = r + ((v ^ j) * kpx(x_hijo_menor_edad, j, qx, w) * kpx(y, j, qx, w))
+}
+
+adospuntos_xyn_m = r - 11 / 24
+
+}
+
+
+

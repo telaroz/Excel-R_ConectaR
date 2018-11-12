@@ -1,0 +1,80 @@
+Public Function Provision_Gasto_Dotal(ed, ant, rCob, edSA, rPrim, Plan, inic, omega_prov, omega_pri, prob_muerte_prov As Range, i_prov, jSA, jPrim, P_pura, P_inv, P_comerc, G_act)
+'Planes 01, 02, 03, 04 y 05: Dotal 10, 15, 20, 25, 30 años
+
+'ed: edad de contratación
+'ant: antigüedad
+'rCob: edad límite de cobertura
+'edSA: edad límite de crecimiento del monto asegurado
+'rPrim: edad límite de pago de primas
+'Plan: número de Plan o tipo de seguro
+'inic: edad inicial de la tabla de mortalidad
+'omega_prov: edad final de la tabla de mortalidad de provisión
+'omega_pri: edad final de la tabla de mortalidad de prima
+'prob_muerte_prov: probabilidad de muerte para el cálculo de la provisión
+'i_prov: tasa de interés para provisión
+'jSA: % de crecimiento anual del monto asegurado
+'jPrim: % de crecimiento quinquenal del monto asegurado
+'P_pura: prima pura
+'P_inv: prima de inventario
+'P_comerc: prima comercial
+'G_act: % de gasto actual con respecto a la prima comercial
+
+
+k = Fix(ant)                                            'Antigüedad entera
+frac = ant - k                                          'Fracción de año póliza transcurrido
+P_Gasto = WorksheetFunction.Max(P_inv - P_pura, 0)      'Prima para gasto administrativo
+v_prov = (1 + i_prov) ^ -1                              'Función de descuento
+
+
+'Provisión año-póliza k
+
+x = ed + k                                              'Edad actual del asegurado
+n = rCob - x                                           'Temporalidad máxima del seguro
+np = rPrim - x                                             'Temporalidad de la anualidad de primas
+
+anu_temp_k = 0
+Prov_gasto_k = 0
+
+
+If (x < omega_prov) And (x < rCob) Then
+prob_sb_prov = prob_Sobrev(prob_muerte_prov, x, inic, omega_prov) 'Probabilidad de sobrevivencia kPx
+'Seguro temporal y anualidad temporal
+For j = 0 To n - 1
+anu_temp_k = anu_temp_k + ((1 + jPrim) ^ Fix(WorksheetFunction.Max(WorksheetFunction.Min(j + k, 60 - ed - 1) / 5, 0))) * (v_prov ^ j) * prob_sb_prov(j + 1)
+Next
+
+Prov_gasto_k = WorksheetFunction.Max((G_act * P_comerc - P_Gasto) * anu_temp_k, 0)
+
+End If
+
+
+'Provisión año-póliza k+1
+
+k = k + 1
+x = x + 1                                               'Edad en el año-póliza k+1
+n = rCob - x                                           'Temporalidad máxima del seguro
+np = rPrim - x                                             'Temporalidad de la anualidad de primas
+
+anu_temp_k1 = 0
+Prov_gasto_k1 = 0
+
+
+If (x < omega_prov) And (x < rCob) Then
+prob_sb_prov = prob_Sobrev(prob_muerte_prov, x, inic, omega_prov) 'Probabilidad de sobrevivencia kPx
+'Seguro temporal y anualidad temporal
+For j = 0 To n - 1
+anu_temp_k1 = anu_temp_k1 + ((1 + jPrim) ^ Fix(WorksheetFunction.Max(WorksheetFunction.Min(j + k, 60 - ed - 1) / 5, 0))) * (v_prov ^ j) * prob_sb_prov(j + 1)
+Next
+Prov_gasto_k1 = WorksheetFunction.Max((G_act * P_comerc - P_Gasto) * anu_temp_k1, 0)
+
+End If
+
+
+If (ed + ant) < rCob Then
+Provision_Gasto_Dotal = (1 - frac) * (Prov_gasto_k + P_Gasto) + frac * (Prov_gasto_k1)
+Else
+Provision_Gasto_Dotal = 0
+End If
+
+
+End Function

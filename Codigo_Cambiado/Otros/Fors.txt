@@ -1,0 +1,19 @@
+For j = 0 To n - 1
+anu_vital_k = anu_vital_k + ((1 + jPrim) ^ Fix(WorksheetFunction.Max(WorksheetFunction.Min(j + k, 60 - ed - 1) / 5, 0))) * (v_prov ^ j) * prob_sb_prov(j + 1)
+Next
+
+
+
+
+For j = 0 To np - 1
+anu_temp_k1 = anu_temp_k1 + ((1 + jPrim) ^ Fix(WorksheetFunction.Max(WorksheetFunction.Min(j + k, 60 - ed - 1) / 5, 0))) * (v_prov ^ j) * prob_sb_prov(j + 1)
+Next j
+
+
+For c = 1 To 3
+    For i = 1 To 6
+        For j = 1 To 2
+            Worksheets(c).Cells(i, j).Value = 100
+        Next j
+    Next i
+Next c

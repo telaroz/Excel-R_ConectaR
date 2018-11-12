@@ -1,0 +1,29 @@
+As.+?(?=,|[)])
+Dim.+
+' por #
+(Function.+?(?=[(]))
+
+
+
+
+#Para extraer el nombre de la función.
+
+Nombres <- (?<=Function ).+(?=[(]) 
+
+
+
+
+Nombres <- function
+
+
+Final de donde hay Function.... poner un {
+
+En vez de End Function  }
+
+= por <-
+
+
+End If por }
+If por if(
+Then por ){
+
