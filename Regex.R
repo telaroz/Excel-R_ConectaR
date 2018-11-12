@@ -82,7 +82,10 @@ VBA_to_R <- function(codigo){
   
   cat(nuevo_texto10, file = here("Codigo_Cambiado",paste0("VBA-R_",format(now(), "%Y%m%d_%H%M%S"),".txt")))
 }
+
 #readtext no necesita el encoding para las tildes y demás. read_file es de readr (tidyverse).
+
+
 codigo <- readtext("Vida_Individual.txt")$text
 codigo <- read_file("Vida_Individual.txt",locale = locale("es", encoding = "Cp1252"))
 
@@ -91,6 +94,9 @@ VBA_to_R(codigo)
 
 
 
+
+
+# Cambios en código -------------------------------------------------------
 
 
 
