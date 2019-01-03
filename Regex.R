@@ -4,6 +4,8 @@ library(mgsub)
 library(dplyr)
 library(readr)
 library(readtext)
+library(lubridate)
+library(here)
 #https://regex101.com/
 #codigo <- read_file("Vida_Individual_con_Ifs.txt")
 
@@ -16,7 +18,7 @@ VBA_to_R <- function(codigo){
   
   patterns = unlist(str_extract_all(nuevo_texto,"Function .+"))
   replacements <- paste0(patterns,"{")
-  nuevo_texto1 <- mgsub(string = nuevo_texto, unlist(str_extract_all(nuevo_texto,"Function .+")), replacement = replacements, fixed =TRUE)
+  nuevo_texto1 <- mgsub(string = nuevo_texto, unlist(str_extract_all(nuevo_texto,"Function .+")), replacement = replacements, fixed = TRUE)
   
   patterns = unlist(str_extract_all(nuevo_texto1,"Function .+?(?=[(])"))
   replacements = paste(unlist(str_extract_all(nuevo_texto1,"(?<=Function ).+?(?=[(])")),"<- function")
@@ -32,27 +34,27 @@ VBA_to_R <- function(codigo){
   
   patterns <- unlist(str_extract_all(nuevo_texto3,"For .+"))
   replacements <- paste0(patterns,")){")
-  nuevo_texto4 <- mgsub(string = nuevo_texto3, patterns , replacements, fixed =TRUE)
+  nuevo_texto4 <- mgsub(string = nuevo_texto3, patterns , replacements, fixed = TRUE)
   
   #For por for (futuro: sapply)
   patterns <- unlist(str_extract_all(nuevo_texto4,"For "))
-  nuevo_texto5 <- mgsub(string = nuevo_texto4, patterns , rep("for(",length(patterns)), fixed =TRUE)
+  nuevo_texto5 <- mgsub(string = nuevo_texto4, patterns , rep("for(",length(patterns)), fixed = TRUE)
   
   
   #Cambiar los next por }
   patterns <- unlist(str_extract_all(nuevo_texto5,"Next.*"))
-  nuevo_texto6 <- mgsub(string = nuevo_texto5, patterns , rep("}",length(patterns)), fixed =TRUE)
+  nuevo_texto6 <- mgsub(string = nuevo_texto5, patterns , rep("}",length(patterns)), fixed = TRUE)
   
   #To por :
   patterns <- unlist(str_extract_all(nuevo_texto6," To "))
-  nuevo_texto7 <- mgsub(string = nuevo_texto6, patterns , rep(":(",length(patterns)), fixed =TRUE)
+  nuevo_texto7 <- mgsub(string = nuevo_texto6, patterns , rep(":(",length(patterns)), fixed = TRUE)
   # = por in
   patterns <- unlist(str_extract_all(nuevo_texto7,"(?<=for[(]).*([=])?"))
-  replacements <- mgsub(string = patterns, rep("=", length(patterns)) , rep("in",length(patterns)), fixed =TRUE)
+  replacements <- mgsub(string = patterns, rep("=", length(patterns)) , rep("in",length(patterns)), fixed = TRUE)
   
   
   #Ifs y operadores lógicos
-  nuevo_texto8 <- mgsub(string = nuevo_texto7, patterns , replacements, fixed =TRUE) %>% 
+  nuevo_texto8 <- mgsub(string = nuevo_texto7, patterns , replacements, fixed = TRUE) %>% 
     mgsub("If ", "if(") %>% 
     mgsub(" And ","&") %>% 
     mgsub(" Or ","|")
@@ -77,8 +79,8 @@ VBA_to_R <- function(codigo){
   # }
   
   nuevo_texto10 <-  mgsub(nuevo_texto9,"Else","}else{") %>% 
-    mgsub(" Then", replacement = "){", fixed =TRUE) %>% 
-    mgsub("End If", replacement = "}", fixed =TRUE)
+    mgsub(" Then", replacement = "){", fixed = TRUE) %>% 
+    mgsub("End If", replacement = "}", fixed = TRUE)
   
   cat(nuevo_texto10, file = here("Codigo_Cambiado",paste0("VBA-R_",format(now(), "%Y%m%d_%H%M%S"),".txt")))
 }
